@@ -137,7 +137,7 @@ td:first-child{white-space:nowrap;color:var(--muted);padding-right:10px}
 <body>
 <header><div class="wrap">
   <h1>🍁 加拿大・西雅圖 12 天旅行行程表</h1>
-  <div class="sub">2026/09/18（五）～ 2026/09/29（二）｜Vancouver・Seattle・Canadian Rockies・Yellowknife</div>
+  <div class="sub">2026/09/18（五）～ 2026/09/30（三）抵台｜台北 ⇄ 香港轉機 ⇄Vancouver・Seattle・Canadian Rockies・Yellowknife</div>
   <div class="pills">
     <span class="pill" id="countdown"></span>
     <span class="pill">ESTA 已核准（至 2028-09-13）</span>
@@ -160,11 +160,14 @@ td:first-child{white-space:nowrap;color:var(--muted);padding-right:10px}
     <div class="panel">
       <h3>✈️ 交通 / 已訂項目</h3>
       <table>
+        <tr><td>9/18</td><td>國泰 <b>CX461</b>｜TPE 12:00 → HKG 14:05（香港轉機 1 小時 50 分）</td></tr>
+        <tr><td>9/18</td><td>國泰 <b>CX810</b>｜HKG 15:55 → YVR 12:35（當地時間，同日抵達）</td></tr>
         <tr><td>9/19</td><td>Seattle 一日團｜Langara-49th Ave Station <b>07:45</b> 集合</td></tr>
         <tr><td>9/20–23</td><td>ToursForFun Rockies 4 日團（產品 105275595）｜9/20 Langara <b>07:15</b> 集合</td></tr>
         <tr><td>9/24</td><td>Air North <b>4N869</b>｜YVR 14:55 → YZF 18:25</td></tr>
         <tr><td>9/26</td><td>Air North <b>4N870</b>｜YZF 17:45 → YVR 19:30</td></tr>
-        <tr><td>9/29</td><td>Cathay <b>CX865</b>｜YVR 00:40 起飛（9/28 深夜到機場）</td></tr>
+        <tr><td>9/29</td><td>國泰 <b>CX865</b>｜YVR 00:40 → HKG 9/30 05:35（9/28 深夜到機場；香港轉機 2 小時 35 分）</td></tr>
+        <tr><td>9/30</td><td>國泰 <b>CX564</b>｜HKG 08:10 → TPE 10:00</td></tr>
       </table>
     </div>
     <div class="panel" id="mealpkg"></div>
@@ -1741,8 +1744,9 @@ const CITY_COLOR = {Vancouver:'#b5452b', Seattle:'#2b6f8f', Rockies:'#2f5d50', Y
 
 const DAYS = [
  {date:'9/18', wd:'Fri', city:'Vancouver', title:'抵達 Vancouver', status:'confirmed',
-  lodging:'Hotel Willo', transport:'12:35 抵達 YVR',
-  timeline:[['12:35','抵達 YVR，預留 1.5–2 小時入境、取行李'],['15:00','約 15:00–15:30 到 Hotel Willo check-in'],
+  lodging:'Hotel Willo', transport:'CX461 TPE 12:00 → HKG 14:05｜CX810 HKG 15:55 → YVR 12:35',
+  timeline:[['12:00','國泰 CX461 台北桃園 TPE 起飛（台灣時間）'],['14:05','抵達香港 HKG，轉機（1 小時 50 分；香港與台灣同時區）'],['15:55','國泰 CX810 香港 HKG 起飛'],
+    ['12:35','抵達 YVR（溫哥華當地時間，同日），預留 1.5–2 小時入境、取行李'],['15:00','約 15:00–15:30 到 Hotel Willo check-in'],
     ['16:30','Canada Place → Waterfront → Gastown Steam Clock（至 18:00）'],['晚餐','Homer St. Cafe & Bar'],['晚上','買好 9/19、9/20 早餐與零食']],
   meals:['晚餐 Homer St. Cafe & Bar：烤雞、漢堡、豬肉類；避開 fish sauce 配菜'],
   notes:[],
@@ -1830,10 +1834,11 @@ const DAYS = [
   meals:['午餐 Meat & Bread：Porchetta / Buffalo Chicken / Meatball / Grilled Cheese'],
   notes:[],
   stops:[['Hotel Willo','WILLO'],['Canada Place（接駁）','CANADA_PLACE'],['Capilano Suspension Bridge','CAPILANO'],['Meat & Bread','MEAT_BREAD'],['Robson Street','ROBSON'],['YVR 機場','YVR']]},
- {date:'9/29', wd:'Tue', city:'Vancouver', title:'返台', status:'confirmed',
-  lodging:'—', transport:'CX865 YVR 00:40 起飛',
-  timeline:[['00:40','CX865 離開 Vancouver']],
-  meals:[], notes:[],
+ {date:'9/29', wd:'Tue', city:'Vancouver', title:'返台（經香港轉機，9/30 抵台）', status:'confirmed',
+  lodging:'—（機上）', transport:'CX865 YVR 00:40 → HKG 05:35｜CX564 HKG 08:10 → TPE 10:00',
+  timeline:[['00:40','國泰 CX865 離開 Vancouver YVR'],['9/30 05:35','抵達香港 HKG（香港時間＝台灣時間），轉機（2 小時 35 分）'],
+    ['9/30 08:10','國泰 CX564 香港 HKG 起飛'],['9/30 10:00','抵達台北桃園 TPE']],
+  meals:[], notes:['9/28 深夜（20:00–21:00）就要出發到 YVR','香港轉機請留意 CX564 登機門與登機時間'],
   stops:[['YVR 機場','YVR']]}
 ];
 
@@ -1875,7 +1880,7 @@ const gmap = (name, ll) => `https://www.google.com/maps/search/?api=1&query=${ll
   const start = new Date('2026-09-18T00:00:00'), now = new Date();
   const d = Math.ceil((start - now) / 864e5);
   document.getElementById('countdown').textContent =
-    d > 0 ? `⏳ 距出發還有 ${d} 天` : (now < new Date('2026-09-29T12:00:00') ? '🧳 旅行進行中' : '✅ 旅程已結束');
+    d > 0 ? `⏳ 距出發還有 ${d} 天` : (now < new Date('2026-09-30T12:00:00') ? '🧳 旅行進行中' : '✅ 旅程已結束');
 })();
 
 // map

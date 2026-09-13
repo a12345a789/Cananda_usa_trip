@@ -63,6 +63,18 @@ ul.plain{margin:0;padding-left:20px}
 ul.plain li{margin:2px 0}
 .meal li::marker{content:"🍽 "}
 .note li::marker{content:"• "}
+.mealplan{border:1px solid var(--line);border-radius:12px;overflow:hidden;background:#fff}
+.mealrow{display:grid;grid-template-columns:52px 1fr;gap:10px;padding:10px 12px;border-bottom:1px dashed var(--line)}
+.mealrow:last-child{border-bottom:0}
+.mlabel{font-weight:700;padding-top:1px}
+.tag{display:inline-block;font-size:12px;font-weight:700;padding:2px 9px;border-radius:99px;margin:0 6px 4px 0;border:1px solid}
+.tag-inc{color:#2f6b3a;border-color:#8fc39a;background:#eef8f0}
+.tag-self{color:#a3560b;border-color:#f0bf86;background:#fdf1e3}
+.tag-pend{color:#5f676b;border-color:#c9ced0;background:#f1f3f4;font-weight:500}
+.mealrow ul{margin:2px 0 0;padding-left:18px;font-size:14px}
+.backup{margin-top:4px;font-size:13px;color:var(--muted)}
+.backup ul{font-size:13px}
+.phrase{font-style:italic;font-weight:600}
 .nofish{background:#fbeee9;border:1px solid #f0c9bb;color:#8c3a22;border-radius:10px;padding:8px 12px;font-size:13px;margin-top:10px}
 
 .grid3{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px;margin-top:18px}
@@ -121,6 +133,7 @@ td:first-child{white-space:nowrap;color:var(--muted);padding-right:10px}
         <tr><td>9/29</td><td>Cathay <b>CX865</b>｜YVR 00:40 起飛（9/28 深夜到機場）</td></tr>
       </table>
     </div>
+    <div class="panel" id="mealpkg"></div>
     <div class="panel">
       <h3>🏨 住宿</h3>
       <table>
@@ -200,26 +213,42 @@ const DAYS = [
   lodging:'Salmon Arm / Revelstoke（依團方安排）', transport:'ToursForFun 4 日團，Langara 07:15 集合',
   timeline:[['06:20','06:20–06:30 Uber / taxi 到 Langara（有大行李）'],['07:15','Langara 集合'],
     ['白天','Vancouver → Merritt → Kelowna → Grizzli Winery（約45分）→ Kalamalka Lake（約15分）'],['晚上','抵達 Salmon Arm / Revelstoke']],
-  meals:['午晚餐依導遊停靠點：選 beef / chicken / pork / vegetarian','住 Salmon Arm → Barley Station Brewpub；住 Revelstoke → The Taco Club'],
+  meals:[],
+  mealOptions:{
+    breakfast:{self:['前一晚在 Vancouver 買好麵包、香蕉、優格、咖啡等簡單早餐']},
+    lunch:{backup:['依導遊停靠點，選 beef / chicken / pork / vegetarian']},
+    dinner:{backup:['若住 Salmon Arm：Barley Station Brewpub','若住 Revelstoke：The Taco Club']}},
   notes:[],
   stops:[['Langara-49th Ave 站（集合）','LANGARA'],['Merritt','MERRITT'],['Kelowna','KELOWNA'],['Grizzli Winery','GRIZZLI'],['Kalamalka Lake','KALAMALKA'],['Salmon Arm','SALMON_ARM'],['Revelstoke','REVELSTOKE']]},
  {date:'9/21', wd:'Mon', city:'Rockies', title:'洛磯山 Day 2｜哥倫比亞冰原', status:'booked',
   lodging:'依團方安排', transport:'團體巴士',
   timeline:[['早上','Salmon Arm / Revelstoke → Glacier NP → Yoho NP → Banff NP'],['約2.5h','Columbia Icefield：Snowcoach / Ice Explorer + Skywalk'],['下午','Bow Lake 車觀'],['約1h','Banff Avenue']],
-  meals:['午餐 冰原快速簡餐：chicken / beef / vegetarian','晚餐 Banff 漢堡 / pizza；自由時間可選 Eddie Burger + Bar / Bear Street Tavern 非海鮮品項'],
-  notes:['冰原風大偏冷，帶保暖外套'],
+  meals:[],
+  mealOptions:{
+    breakfast:{},
+    lunch:{self:['Columbia Icefield Chalet','可考慮 chicken fingers / beef burger / mac & cheese 等非海鮮品項']},
+    dinner:{self:['Banff：Eddie Burger + Bar','Banff：Bear Street Tavern','以 beef / chicken / pizza 類非海鮮餐點為主']}},
+  notes:['冰原風大偏冷，帶保暖外套','晚上可在 Banff IGA / Nesters 採買 9/22 早餐'],
   stops:[['Revelstoke','REVELSTOKE'],['Glacier NP','GLACIER'],['Yoho NP','YOHO'],['Columbia Icefield','ICEFIELD'],['Bow Lake','BOW_LAKE'],['Banff Avenue','BANFF']]},
  {date:'9/22', wd:'Tue', city:'Rockies', title:'洛磯山 Day 3｜露易絲湖・夢蓮湖', status:'booked',
   lodging:'Salmon Arm / Revelstoke（依團方安排）', transport:'團體巴士',
-  timeline:[['早上','Banff Gondola（約60分）→ Bow Falls（約10分）'],['中午','Lake Louise Village 午餐'],
+  timeline:[['早上','Banff Gondola（約60分）→ Bow Falls（約10分）'],['中午','Lake Louise Village 午餐（✓ 餐包已含｜地接安排中）'],
     ['下午','Lake Louise（約90分）→ Moraine Lake（約30分）→ Last Spike（約20分）'],['晚上','回 Salmon Arm / Revelstoke']],
-  meals:['午餐 Trailhead Cafe：chicken / pulled pork / vegetarian'],
+  meals:[],
+  mealOptions:{
+    breakfast:{self:['前一晚在 Banff IGA / Nesters 採買','或依集合時間選 Tim Hortons 等快速早餐']},
+    lunch:{backup:['Lake Louise Village：Trailhead Cafe（chicken / pulled pork / vegetarian）']},
+    dinner:{}},
   notes:[],
   stops:[['Banff Gondola','GONDOLA'],['Bow Falls','BOW_FALLS'],['Lake Louise Village','LL_VILLAGE'],['Lake Louise','LAKE_LOUISE'],['Moraine Lake','MORAINE'],['Last Spike','LAST_SPIKE'],['Salmon Arm','SALMON_ARM']]},
  {date:'9/23', wd:'Wed', city:'Vancouver', title:'洛磯山 Day 4｜返回 Vancouver', status:'booked',
   lodging:'Hotel Willo', transport:'團體巴士返程',
   timeline:[['白天','Kamloops Ginseng Factory（約45分）→ Hope（約30分）→ Fraser Valley → Vancouver'],['傍晚','返程時間依交通 / 天候'],['晚上','回 Hotel Willo：洗衣、充電、整理 Yellowknife 小行李']],
-  meals:['晚餐 Japadog 或 Meat & Bread 非海鮮品項'],
+  meals:[],
+  mealOptions:{
+    breakfast:{},
+    lunch:{},
+    dinner:{self:['返回 Vancouver 後自行用餐','Japadog','Meat & Bread','選擇非海鮮品項']}},
   notes:[],
   stops:[['Salmon Arm','SALMON_ARM'],['Kamloops','KAMLOOPS'],['Hope','HOPE'],['Hotel Willo','WILLO'],['Japadog','JAPADOG'],['Meat & Bread','MEAT_BREAD']]},
  {date:'9/24', wd:'Thu', city:'Yellowknife', title:'飛黃刀｜第 1 晚極光', status:'confirmed',
@@ -262,6 +291,24 @@ const DAYS = [
   meals:[], notes:[],
   stops:[['YVR 機場','YVR']]}
 ];
+
+// Rockies 4 日團餐包（旅行社已確認配置；實際餐廳 / 時間 / 菜色待地接通知）
+const meal_package = {
+  status: "booked",
+  total_meals: 7,
+  arrangement_status: "pending",
+  dietary_note: "No seafood",
+  included_meals_by_day: {
+    "2026-09-20": ["lunch", "dinner"],
+    "2026-09-21": ["breakfast"],
+    "2026-09-22": ["lunch", "dinner"],
+    "2026-09-23": ["breakfast", "lunch"]
+  }
+};
+const MEAL_KEYS = ['breakfast','lunch','dinner'];
+const MEAL_LABEL = {breakfast:'早餐', lunch:'午餐', dinner:'晚餐'};
+const isoDate = md => { const [m,d] = md.split('/'); return `2026-${m.padStart(2,'0')}-${d.padStart(2,'0')}`; };
+const pkgMeals = d => meal_package.included_meals_by_day[isoDate(d.date)];
 
 const STATUS = {confirmed:'已確認', booked:'已訂團', pending:'待定', optional:'自由彈性'};
 const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
@@ -331,6 +378,42 @@ function drawDay(idx) {
   if (pts.length === 1) map.setView(pts[0], 11); else map.fitBounds(pts, {padding:[40,40], maxZoom:15});
 }
 
+const li = arr => arr.map(x => `<li>${esc(x)}</li>`).join('');
+function mealPlanHtml(d) {
+  const inc = pkgMeals(d);
+  const rows = MEAL_KEYS.map(k => {
+    const included = inc.includes(k), o = (d.mealOptions || {})[k] || {};
+    const tags = included
+      ? `<span class="tag tag-inc">✓ 餐包已含</span><span class="tag tag-pend">地接安排中</span>`
+      : `<span class="tag tag-self">○ 自理</span>`;
+    const sub = included
+      ? (o.backup ? `<div class="backup">備案：若地接臨時無法安排餐食時使用<ul>${li(o.backup)}</ul></div>` : '')
+      : (o.self ? `<ul>${li(o.self)}</ul>` : '');
+    return `<div class="mealrow" data-meal="${k}" data-included="${included}"><div class="mlabel">${MEAL_LABEL[k]}</div><div>${tags}${sub}</div></div>`;
+  }).join('');
+  return `<div class="mealplan">${rows}</div>
+    <div class="nofish">🍽 餐包菜單尚待確認，需向導遊／地接確認 non-seafood option。<br>
+      英文備用句：<span class="phrase">“I don't eat seafood. No fish or shellfish, please.”</span></div>
+    <div class="nofish">🚫 避開海鮮：魚、蝦、蟹、貝類，含魚露、魚介湯底</div>`;
+}
+
+function renderMealPackageCard() {
+  const days = Object.entries(meal_package.included_meals_by_day);
+  const count = days.reduce((n, [, m]) => n + m.length, 0);
+  document.getElementById('mealpkg').innerHTML = `
+    <h3>🍽 Rockies 餐包 <span style="text-transform:none;letter-spacing:0">Meal Package</span></h3>
+    <table>
+      <tr><td>狀態</td><td><span class="badge b-${meal_package.status}">已購買</span></td></tr>
+      <tr><td>總餐數</td><td><b>${meal_package.total_meals} 餐</b>${count !== meal_package.total_meals ? ' ⚠️ 配置合計不符' : ''}</td></tr>
+      ${days.map(([iso, m], i) => `<tr><td>Day ${i+1}（${+iso.slice(5,7)}/${+iso.slice(8)}）</td><td>${m.map(k => MEAL_LABEL[k]).join('、')}</td></tr>`).join('')}
+      <tr><td>餐廳／菜色</td><td><span class="tag tag-pend">待地接通知</span></td></tr>
+      <tr><td>Dietary note</td><td>${esc(meal_package.dietary_note)}</td></tr>
+    </table>
+    <div class="nofish">餐包菜單尚待確認，需向導遊／地接確認 non-seafood option。<br>
+      <span class="phrase">“I don't eat seafood. No fish or shellfish, please.”</span></div>`;
+}
+renderMealPackageCard();
+
 function renderDetail(idx) {
   const el = document.getElementById('detail');
   if (idx === -1) {
@@ -339,7 +422,7 @@ function renderDetail(idx) {
       <ul class="timeline">${DAYS.map((d,i)=>`<li><span class="t">${d.date} ${d.wd}</span>
         <a href="#" data-go="${i}" style="color:inherit">${esc(d.title)}</a>
         <span class="badge b-${d.status}" style="margin-left:6px">${STATUS[d.status]}</span>
-        <div style="color:var(--muted);font-size:13px">🏨 ${esc(d.lodging)}　🚌 ${esc(d.transport)}</div></li>`).join('')}</ul>`;
+        <div style="color:var(--muted);font-size:13px">🏨 ${esc(d.lodging)}　🚌 ${esc(d.transport)}${pkgMeals(d) ? `　🍽 餐包：${pkgMeals(d).map(k => MEAL_LABEL[k]).join('、')}` : ''}</div></li>`).join('')}</ul>`;
     el.querySelectorAll('[data-go]').forEach(a => a.onclick = e => { e.preventDefault(); select(+a.dataset.go); });
     return;
   }
@@ -354,7 +437,7 @@ function renderDetail(idx) {
     <ul class="timeline">${d.timeline.map(([t,x]) => `<li><span class="t">${esc(t)}</span>${esc(x)}</li>`).join('')}</ul>
     <h3>地點（點擊定位地圖）</h3>
     <div class="stops">${d.stops.map((s,i)=>`<button class="stop" data-i="${i}"><span class="n" style="background:${color}">${i+1}</span>${esc(s[0])}</button>`).join('')}</div>
-    ${d.meals.length ? `<h3>餐飲</h3><ul class="plain meal">${d.meals.map(m=>`<li>${esc(m)}</li>`).join('')}</ul>
+    ${pkgMeals(d) ? `<h3>餐飲（Rockies 餐包）</h3>${mealPlanHtml(d)}` : d.meals.length ? `<h3>餐飲</h3><ul class="plain meal">${d.meals.map(m=>`<li>${esc(m)}</li>`).join('')}</ul>
       <div class="nofish">🚫 避開海鮮：魚、蝦、蟹、貝類，含魚露、魚介湯底</div>` : ''}
     ${d.notes.length ? `<h3>提醒</h3><ul class="plain note">${d.notes.map(m=>`<li>${esc(m)}</li>`).join('')}</ul>` : ''}
   `;

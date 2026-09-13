@@ -88,6 +88,26 @@ ul.plain li{margin:2px 0}
 .skystations div{border-left:3px solid #0096d6;padding:2px 0 2px 10px}
 .skystations b{display:block}
 .skylink{display:inline-block;margin-top:14px;font-size:14px;color:var(--lake)}
+.certbox{border:1px solid #9cc3dd;background:#edf5fb;border-radius:12px;padding:10px 14px;font-size:14px}
+.certmeta{font-size:12px;color:var(--muted);margin-top:6px}
+.certmeta a{color:var(--lake)}
+.tag-fish{color:#9b2c1c;border-color:#e9a595;background:#fbe9e5}
+.pickintro{font-size:13px;color:var(--muted);margin:6px 0 8px}
+.picksum{background:#eef8f0;border:1px solid #8fc39a;color:#2f6b3a;border-radius:10px;padding:7px 12px;font-size:14px}
+.pgroup{margin-top:12px}
+.pgtitle{font-weight:700;font-size:14px;margin-bottom:6px}
+.pick{border:1px solid var(--line);border-left:4px solid var(--pc);border-radius:10px;background:#fff;padding:9px 12px;margin-bottom:8px;transition:.15s}
+.pick.on{background:#fffaf0;box-shadow:0 0 0 2px var(--pc) inset}
+.pickhead{display:flex;gap:8px;align-items:flex-start;cursor:pointer}
+.pickhead input{width:18px;height:18px;margin-top:3px;accent-color:var(--pc);flex:0 0 auto}
+.pzh{color:var(--muted);font-size:13px}
+.pmeta{font-size:12px;color:var(--muted);margin:4px 0 2px 26px}
+.pmeta .tag{margin:0 0 0 6px;vertical-align:1px}
+.pick ul{margin:4px 0 0 26px;padding-left:16px;font-size:13px}
+.ptip{font-size:13px;margin:4px 0 0 26px;color:#6a4a12}
+.pact{margin:6px 0 0 26px;display:flex;gap:12px;align-items:center;font-size:13px}
+.pact button{font:inherit;font-size:12px;border:1px solid var(--line);background:#fff;border-radius:7px;padding:2px 8px;cursor:pointer;color:inherit}
+.pact a{color:var(--lake)}
 .nofish{background:#fbeee9;border:1px solid #f0c9bb;color:#8c3a22;border-radius:10px;padding:8px 12px;font-size:13px;margin-top:10px}
 
 .grid3{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px;margin-top:18px}
@@ -1709,8 +1729,8 @@ const P = { // [lat, lng]
   BOW_FALLS:[51.1647,-115.5588], LL_VILLAGE:[51.4254,-116.1773], LAKE_LOUISE:[51.4166,-116.2167],
   MORAINE:[51.3217,-116.1860], LAST_SPIKE:[50.9794,-118.6286], KAMLOOPS:[50.6745,-120.3273],
   HOPE:[49.3858,-121.4419], JAPADOG:[49.2811,-123.1233], MEAT_BREAD:[49.2830,-123.1100],
-  JAM:[49.2798,-123.1097], YZF:[62.4628,-114.4403], NOVA:[62.4558,-114.3703],
-  ZEHABESHA:[62.4540,-114.3722], AURORA:[62.5200,-114.2000], PWNHC:[62.4578,-114.3777],
+  JAM:[49.2798,-123.1097], YZF:[62.4628,-114.4403], NOVA:[62.4588,-114.3728],
+  ZEHABESHA:[62.4528,-114.3694], AURORA:[62.5200,-114.2000], PWNHC:[62.4578,-114.3777],
   OLD_TOWN:[62.4608,-114.3530], PILOTS:[62.4623,-114.3517], WELCOME:[62.4450,-114.4000],
   BIRCHWOOD:[62.4543,-114.3712], WOODYARD:[62.4640,-114.3525], GSL:[62.4700,-114.3400],
   STANLEY:[49.3017,-123.1417], GRANVILLE:[49.2712,-123.1340], MEET:[49.2833,-123.1040],
@@ -1859,7 +1879,7 @@ const gmap = (name, ll) => `https://www.google.com/maps/search/?api=1&query=${ll
 })();
 
 // map
-let map = null, layer = null;
+let map = null, layer = null, pickLayer = null;
 if (window.L) {
   map = L.map('map', {scrollWheelZoom:true});
   // OSM / CARTO 圖磚會擋直接開啟的本機檔案（file:// 沒有 Referer → 403 / API KEY 浮水印），改用 Esri
@@ -1867,6 +1887,7 @@ if (window.L) {
     maxZoom:19, attribution:'Tiles &copy; Esri &mdash; Esri, HERE, Garmin, &copy; OpenStreetMap contributors'
   }).addTo(map);
   layer = L.layerGroup().addTo(map);
+  pickLayer = L.layerGroup().addTo(map);
   const lg = L.control({position:'bottomleft'});
   lg.onAdd = () => { const d = L.DomUtil.create('div','legend');
     d.innerHTML = Object.entries(CITY_COLOR).map(([k,v]) => `<i style="background:${v}"></i>${k}`).join('<br>'); return d; };
@@ -1876,10 +1897,163 @@ if (window.L) {
   document.getElementById('maperr').style.display = 'block';
 }
 
+// ===== 黃刀鎮餐廳／採買清單（來源：KK 部落格〈黃刀鎮景點推薦〉2026-06 版；座標取自文章附的 Google 地圖地標，Walmart / KFC / Starbucks 取自 OpenStreetMap）=====
+const YK_SOURCE = 'https://halokkvision.com/yellowknife-tour-food/';
+const YK_DAYS = { // 每天可以用到的時段
+  '9/24': '晚餐（約 19:00 抵達飯店後；極光出發前）',
+  '9/25': '早午餐、午餐、晚餐、宵夜與採買',
+  '9/26': '早午餐與最後採買（11:00 退房後、送機前）'
+};
+const PICK_CAT = {
+  cert:      {label:'📮 明信片・北緯 60 度證書', color:'#0b6fa4'},
+  grocery:   {label:'🛒 超市・大賣場', color:'#2f7d4a'},
+  fastfood:  {label:'🍟 速食・咖啡',   color:'#c77700'},
+  restaurant:{label:'🍽 餐廳',         color:'#b5452b'},
+  shop:      {label:'🎁 紀念品',       color:'#7a5aa6'}
+};
+const SEAFOOD = {
+  ok:     {cls:'tag-inc',  text:'非海鮮選擇多'},
+  caution:{cls:'tag-self', text:'點餐前需確認'},
+  fish:   {cls:'tag-fish', text:'以魚料理為主'}
+};
+const YK_PICKS = [
+  {id:'visitor', cat:'cert', name:'Yellowknife Visitor Centre', zh:'遊客中心：北緯 60 度證書＋紀念別針', area:'新城區 Downtown（Centre Square Mall 地下樓層，5014 – 50th Street）', ll:[62.4536669,-114.369598],
+   gmap:'https://www.google.com/maps/search/?api=1&query=Yellowknife+Visitor+Centre+Centre+Square+Mall', seafood:'',
+   points:['營業時間：每天 10:00–18:00（官方網站 Extraordinary YK）',
+     '官方：可免費領 Yellowknife 限定別針，以及「到過北緯 60 度」證書（North of the 60th Parallel Certificate）',
+     'KK 部落格：可蓋紀念章、領證書，還有附小黃刀別針的明信片',
+     '舊文章寫在 City Hall，現已搬到 Centre Square Mall，別走錯'],
+   tip:'和 Ricky\'s、Independent Grocer、Korea House 都在 Downtown，可排同一趟'},
+  {id:'post', cat:'cert', name:'Canada Post（Downtown）', zh:'郵局：寄明信片回台灣', area:'新城區 Downtown（50th Street）', ll:[62.4525901,-114.3689415],
+   gmap:'https://www.google.com/maps/search/?api=1&query=Canada+Post+50th+Street+Yellowknife', seafood:'',
+   points:['在遊客中心附近，拿到明信片可以順路寄','營業時間未確認，出發前查 Canada Post 官網或 Google 地圖'],
+   tip:'KK 提到黃刀機場也有郵筒，9/26 送機時也能寄（郵票要先買好）'},
+  {id:'grocer', cat:'grocery', name:"Your Independent Grocer", zh:'全鎮最大生鮮超市', area:'新城區 Downtown（50th Ave）', ll:[62.4553808,-114.3707816],
+   gmap:'https://maps.app.goo.gl/CLZRrhWpDeWkpZXv9', seafood:'ok',
+   points:['熟食區有現炸雞腿、雞翅和美式烤雞，作者推烤雞（兩人吃不完一整隻），特價炸雞覺得普通',
+     '伴手禮：楓糖漿、楓糖餅乾、極地小零食',
+     '加拿大限定 Lay\'s Ketchup 洋芋片；茶區可找楓糖紅茶、Cream of Earl Grey'],
+   tip:'買烤雞回飯店微波，當極光前晚餐或回來的宵夜'},
+  {id:'walmart', cat:'grocery', name:'Walmart Yellowknife Supercentre', zh:'民生大賣場（內有 McDonald\'s）', area:'Old Airport Rd（離市中心較遠）', ll:[62.4495082,-114.4086954],
+   gmap:'https://www.google.com/maps/search/?api=1&query=Walmart+Yellowknife+Supercentre', seafood:'ok',
+   points:['偏民生用品的大賣場，可買零食','作者覺得走路過去不太方便，市區超市其實就夠用'],
+   tip:'沒租車的話，優先選市區的 Independent Grocer'},
+  {id:'mcd', cat:'fastfood', name:"McDonald's", zh:'麥當勞（在 Walmart 賣場內）', area:'Old Airport Rd', ll:[62.4497,-114.4083],
+   gmap:'https://www.google.com/maps/search/?api=1&query=McDonald%27s+Walmart+Yellowknife', seafood:'ok',
+   points:['逛 Walmart 時順便吃'], tip:'避開 Filet-O-Fish'},
+  {id:'kfc', cat:'fastfood', name:'KFC', zh:'肯德基（獨立店面）', area:'Old Airport Rd', ll:[62.4452373,-114.4076393],
+   gmap:'https://www.google.com/maps/search/?api=1&query=KFC+Yellowknife', seafood:'ok',
+   points:['炸雞，極地抗寒補給'], tip:''},
+  {id:'sbux', cat:'fastfood', name:'Starbucks', zh:'星巴克（KFC 隔壁）', area:'Old Airport Rd', ll:[62.4453127,-114.4078013],
+   gmap:'https://www.google.com/maps/search/?api=1&query=Starbucks+Yellowknife', seafood:'ok',
+   points:['熱飲暖手'], tip:'可跟 KFC、Walmart 排在同一趟'},
+  {id:'rickys', cat:'restaurant', name:"Ricky's All Day Grill", zh:'美式早午餐', area:'新城區 Downtown（Franklin Ave）', ll:[62.4538797,-114.3704147],
+   gmap:'https://maps.app.goo.gl/apri3osA8ZL2jYzZ9', seafood:'ok',
+   points:['全天供應大份量美式餐點，空間大、暖氣足','作者點了漢堡、經典班尼迪克蛋（配香脆薯塊）','對面有紀念品店'],
+   tip:'追完極光睡到中午，很適合 9/25、9/26 早午餐'},
+  {id:'saigon', cat:'restaurant', name:'A Taste of Saigon', zh:'越南河粉', area:'新城區 Downtown', ll:[62.4547961,-114.3729397],
+   gmap:'https://maps.app.goo.gl/a2YW9JNDutYurzgK9', seafood:'caution',
+   points:['旅人口碑好的暖胃河粉店','作者覺得河粉好吃，春捲普通'],
+   tip:'越南料理常用魚露（沾醬、湯底、春捲沾醬）：點牛肉河粉時請確認 no fish sauce'},
+  {id:'korea', cat:'restaurant', name:'Korea House Restaurant', zh:'韓式料理・熱湯', area:'新城區 Downtown（Franklin Ave）', ll:[62.4528097,-114.3683642],
+   gmap:'https://maps.app.goo.gl/ksixiT46SXtqmeie9', seafood:'caution',
+   points:['在地人和自助客喜愛的熱湯店','作者點的是海鮮豆腐鍋（本行程請避開）；外帶不用付服務費'],
+   tip:'韓式湯底常用鯷魚／海鮮高湯、泡菜可能含魚露或蝦醬，點餐前詢問'},
+  {id:'goldrange', cat:'restaurant', name:'Gold Range Bistro', zh:'中式料理', area:'新城區 Downtown', ll:[62.4533315,-114.3705713],
+   gmap:'https://maps.app.goo.gl/jMCxC9BimevQqGWh9', seafood:'caution',
+   points:['作者覺得牛肉河粉不錯；糖醋雞普通','酸辣湯價格偏高'],
+   tip:'中式醬料可能含蠔油或蝦米，需要時詢問'},
+  {id:'bullocks', cat:'restaurant', name:"Bullock's Bistro", zh:'黃刀最有名的老木屋餐廳', area:'舊城區 Old Town', ll:[62.4647844,-114.3500747],
+   gmap:'https://maps.app.goo.gl/cSBiZufPSawuXP448', seafood:'fish',
+   points:['招牌是大奴湖現撈野生魚（炸／煎／烤）與秘製醬汁','非海鮮選項：野水牛排（Bison steak），作者覺得牛排好吃但貴','中高價位、份量多；作者曾遇到週日公休撲空'],
+   tip:'建議中午一開門或非尖峰時段去，避免排隊；主打魚料理，需確認煎台／油鍋是否共用'},
+  {id:'walrus', cat:'restaurant', name:'Walrus Fried Fish & Griddle', zh:'舊城區湖畔紅色餐車', area:'舊城區 Old Town', ll:[62.4679433,-114.3477438],
+   gmap:'https://maps.app.goo.gl/mNX9oBWJ27XSLvsT6', seafood:'fish',
+   points:['招牌是現炸大奴湖白魚（Fish & Chips）','非海鮮選項：招牌熱狗堡 Chummy Dog','價格比 Bullock\'s 親民（作者沒吃，是事後查到的）'],
+   tip:'主打炸魚，同油鍋機率高；可以逛 Old Town、飛行員紀念碑時順路'},
+  {id:'souvenir', cat:'shop', name:'Northern Souvenirs & Gifts', zh:'紀念品店', area:'新城區 Downtown', ll:[62.456356,-114.3713337],
+   gmap:'https://maps.app.goo.gl/57eF2v5qtn2z7WxB9', seafood:'',
+   points:['作者在這裡買了很多北極熊造型極光磁鐵'], tip:'黃刀的紀念品店外觀常看起來像沒營業，要仔細找'}
+];
+
+const km = (a, b) => { const R = 6371, t = Math.PI/180, dLat = (b[0]-a[0])*t, dLng = (b[1]-a[1])*t;
+  const h = Math.sin(dLat/2)**2 + Math.cos(a[0]*t)*Math.cos(b[0]*t)*Math.sin(dLng/2)**2; return 2*R*Math.asin(Math.sqrt(h)); };
+const getPicks = date => { try { return new Set(JSON.parse(localStorage.getItem('yk-picks-' + date) || '[]')); } catch(e) { return new Set(pickMemory[date] || []); } };
+const pickMemory = {};
+const savePicks = (date, set) => { pickMemory[date] = [...set]; try { localStorage.setItem('yk-picks-' + date, JSON.stringify([...set])); } catch(e) {} };
+
+// 遊客中心 10:00–18:00 對照本行程
+const CERT_TIMING = {
+  '9/24': {tag:'tag-fish', label:'✗ 來不及', text:'Air North 4N869 18:25 才抵達 YZF，遊客中心 18:00 已關門。'},
+  '9/25': {tag:'tag-inc',  label:'✓ 最推薦', text:'全天自由活動，10:00–18:00 都能去。建議中午在 Ricky\'s 等 Downtown 餐廳吃完早午餐後順路去，再到郵局寄明信片。若導遊安排的市區遊在營業時間內經過遊客中心，也可以當場領。記得極光前留 1.5–2 小時回飯店休息。'},
+  '9/26': {tag:'tag-self', label:'△ 備案',   text:'10:00 開門到 11:00 退房前可以先去，或退房後、送機集合前再去。送機約起飛（17:45）前 2–3 小時集合，以導遊通知為準，時間抓緊。'}
+};
+function certHtml(d) {
+  const t = CERT_TIMING[d.date];
+  return `<h3>📮 明信片＆北緯 60 度證書</h3>
+    <div class="certbox">
+      <div><span class="tag ${t.tag}">${t.label}</span><b>${d.date} 可以去嗎？</b></div>
+      <div style="margin-top:4px">${esc(t.text)}</div>
+      <div class="certmeta">📍 Yellowknife Visitor Centre：Centre Square Mall 地下樓層（5014 – 50th Street），距 Chateau Nova 約 ${km(P.NOVA, YK_PICKS[0].ll).toFixed(1)} km，可步行・🕙 每天 10:00–18:00
+        ・<a href="${YK_PICKS[0].gmap}" target="_blank" rel="noopener">Google 地圖 ↗</a>
+        ・<a href="https://extraordinaryyk.com/contact-us" target="_blank" rel="noopener">官方資訊 ↗</a></div>
+    </div>`;
+}
+
+function pickListHtml(d) {
+  const sel = getPicks(d.date);
+  const groups = Object.entries(PICK_CAT).map(([cat, c]) => {
+    const items = YK_PICKS.filter(p => p.cat === cat).map(p => {
+      const dist = km(P.NOVA, p.ll), sf = SEAFOOD[p.seafood];
+      return `<div class="pick${sel.has(p.id) ? ' on' : ''}" style="--pc:${c.color}">
+        <label class="pickhead"><input type="checkbox" value="${p.id}"${sel.has(p.id) ? ' checked' : ''}>
+          <span><b>${esc(p.name)}</b> <span class="pzh">${esc(p.zh)}</span></span></label>
+        <div class="pmeta">📍 ${esc(p.area)}・距 Chateau Nova 約 ${dist.toFixed(1)} km（直線）${dist > 2 ? '，建議搭車' : dist > 1 ? '，步行約 20–30 分' : '，可步行'}
+          ${sf ? `<span class="tag ${sf.cls}">${sf.text}</span>` : ''}</div>
+        <ul>${li(p.points)}</ul>
+        ${p.tip ? `<div class="ptip">💡 ${esc(p.tip)}</div>` : ''}
+        <div class="pact"><button type="button" class="locate" data-id="${p.id}">在地圖上看</button>
+          <a href="${p.gmap}" target="_blank" rel="noopener">Google 地圖 ↗</a></div>
+      </div>`;
+    }).join('');
+    return `<div class="pgroup"><div class="pgtitle">${c.label}</div>${items}</div>`;
+  }).join('');
+  return `${certHtml(d)}
+    <h3>🍴 黃刀餐廳＆採買清單（可勾選）</h3>
+    <div class="picksum" id="picksum"></div>
+    <div class="pickintro">本日適用：${esc(YK_DAYS[d.date])}。勾選想去的店，會在地圖上放大標示，並記在這台裝置的瀏覽器裡（每天分開記）。</div>
+    ${groups}
+    <div class="nofish">🚫 避開海鮮：魚、蝦、蟹、貝類，含魚露、魚介湯底。英文：<span class="phrase">“I don't eat seafood. No fish or shellfish, please.”</span></div>
+    <div class="pickintro">🧾 作者提醒：黃刀用餐通常會詢問是否加服務費；外帶可不加。部分店家會公休，出發前先看 Google 地圖營業時間。市區有一區常有遊民，快速通過，深夜不要在外閒晃。<br>
+      清單來源：<a href="${YK_SOURCE}" target="_blank" rel="noopener">KK〈黃刀鎮景點推薦／黃刀鎮美食〉</a>（2026/06 發布，作者為 9 月下旬造訪，價格與營業資訊可能已變動）。</div>`;
+}
+function updatePickSummary(d) {
+  const box = document.getElementById('picksum'); if (!box) return;
+  const sel = getPicks(d.date), names = YK_PICKS.filter(p => sel.has(p.id)).map(p => p.name);
+  box.innerHTML = names.length ? `✅ ${d.date} 已選 ${names.length} 家：${names.map(esc).join('、')}` : `尚未勾選，下方挑選想去的餐廳和採買地點`;
+}
+const pickMarkers = {};
+function drawPicks(d) {
+  if (!map) return;
+  pickLayer.clearLayers();
+  Object.keys(pickMarkers).forEach(k => delete pickMarkers[k]);
+  if (!d || !YK_DAYS[d.date]) return;
+  const sel = getPicks(d.date);
+  YK_PICKS.forEach(p => {
+    const on = sel.has(p.id), c = PICK_CAT[p.cat].color;
+    const m = L.circleMarker(p.ll, {radius: on ? 10 : 6, color: on ? '#111' : '#fff', weight: on ? 3 : 1.5, fillColor: c, fillOpacity: on ? 1 : .8})
+      .addTo(pickLayer)
+      .bindTooltip(`${on ? '✅ ' : ''}${p.name}`, {permanent: on, direction:'top', offset:[0,-8]})
+      .bindPopup(`<b>${esc(p.name)}</b><br>${esc(p.zh)}<br><a href="${p.gmap}" target="_blank" rel="noopener">在 Google 地圖開啟 ↗</a>`);
+    pickMarkers[p.id] = m;
+  });
+}
+
 const markers = [];
 function drawDay(idx) {
   if (!map) return;
   layer.clearLayers(); markers.length = 0;
+  drawPicks(idx === -1 ? null : DAYS[idx]);
   if (idx === -1) { // overview
     const bounds = [];
     DAYS.forEach((d, i) => {
@@ -1976,6 +2150,7 @@ function renderDetail(idx) {
     ${pkgMeals(d) ? `<h3>餐飲（Rockies 餐包）</h3>${mealPlanHtml(d)}` : d.meals.length ? `<h3>餐飲</h3><ul class="plain meal">${d.meals.map(m=>`<li>${esc(m)}</li>`).join('')}</ul>
       <div class="nofish">🚫 避開海鮮：魚、蝦、蟹、貝類，含魚露、魚介湯底</div>` : ''}
     ${d.notes.length ? `<h3>提醒</h3><ul class="plain note">${d.notes.map(m=>`<li>${esc(m)}</li>`).join('')}</ul>` : ''}
+    ${YK_DAYS[d.date] ? pickListHtml(d) : ''}
     ${SKY_DAYS.includes(d.date) ? `<a class="skylink" href="#skytrain">🚇 查看 SkyTrain 地鐵圖（本日會用到的車站已標示）</a>` : ''}
   `;
   el.querySelectorAll('.stop').forEach(b => b.onclick = () => {
@@ -1983,6 +2158,19 @@ function renderDetail(idx) {
     if (map) { map.setView(ll, 14); markers[i].openPopup(); if (innerWidth <= 900) scrollTo({top:0,behavior:'smooth'}); }
     else window.open(gmap(d.stops[i][0], ll), '_blank');
   });
+  el.querySelectorAll('.pick input').forEach(cb => cb.onchange = () => {
+    const set = getPicks(d.date);
+    cb.checked ? set.add(cb.value) : set.delete(cb.value);
+    savePicks(d.date, set);
+    cb.closest('.pick').classList.toggle('on', cb.checked);
+    updatePickSummary(d); drawPicks(d);
+  });
+  el.querySelectorAll('.pick .locate').forEach(b => b.onclick = () => {
+    const p = YK_PICKS.find(x => x.id === b.dataset.id);
+    if (map) { map.setView(p.ll, 16); const m = pickMarkers[p.id]; if (m) m.openPopup(); if (innerWidth <= 900) scrollTo({top:0,behavior:'smooth'}); }
+    else window.open(p.gmap, '_blank');
+  });
+  if (YK_DAYS[d.date]) updatePickSummary(d);
 }
 
 const bar = document.getElementById('daybar');

@@ -132,12 +132,41 @@ td:first-child{white-space:nowrap;color:var(--muted);padding-right:10px}
   .daybar,.mapbox{display:none}
   .layout{grid-template-columns:1fr}
 }
+/* ===== 列印／PDF 模式（網址加 ?print=1，由 make_pdf.py 產生 PDF）===== */
+@page{size:A4;margin:10mm}
+body.printmode{-webkit-print-color-adjust:exact;print-color-adjust:exact;background:#fff}
+.printmode header{padding:18px 20px 14px}
+.printmode header .wrap,.printmode main{max-width:718px}
+.printmode main{padding:12px 0 0}
+.printmode .daybar,.printmode .layout,.printmode .zoombtns,.printmode .skylink,.printmode .pact button,.printmode .maperr{display:none!important}
+.printmode .panel{padding:14px 16px}
+.pday{break-before:page;margin-top:14px}
+.pmap{width:100%;height:220px;border:1px solid var(--line);border-radius:12px;margin:12px 0 4px;background:#dfe6e6}
+.pmap.ov{height:520px}
+.printmode .grid3{break-before:page;font-size:12px;gap:10px}
+.printmode .grid3 table{font-size:12px}
+.printmode .grid3 td{padding:3px 4px}
+.printmode #skytrain{break-before:page}
+.printmode .skyview{max-height:none;overflow:visible}
+.printmode .pick,.printmode .mealrow,.printmode .certbox,.printmode .timeline li,.printmode .skystations div{break-inside:avoid}
+body.printmode{font-size:13px;line-height:1.5}
+.printmode .timeline li{padding:2px 0 6px 18px}
+.printmode h3{margin:12px 0 6px}
+.printmode .pgroup{display:grid;grid-template-columns:1fr 1fr;gap:0 8px}
+.printmode .pgroup .pgtitle{grid-column:1 / -1}
+.printmode .pick{padding:7px 9px}
+.printmode .pick ul,.printmode .ptip,.printmode .pact,.printmode .pmeta{margin-left:0}
+.printmode .pickhead input{display:none}
+.ptip-label{font-size:10px;padding:1px 4px}
+.pnote{font-size:13px;background:#f1f3f4;border-radius:10px;padding:7px 12px;margin-top:10px}
+.printmode .leaflet-control-attribution{font-size:9px}
+.pdfstamp{font-size:12px;opacity:.85;margin-top:8px}
 </style>
 </head>
 <body>
 <header><div class="wrap">
   <h1>🍁 加拿大・西雅圖 12 天旅行行程表</h1>
-  <div class="sub">2026/09/18（五）～ 2026/09/30（三）抵台｜台北 ⇄ 香港轉機 ⇄Vancouver・Seattle・Canadian Rockies・Yellowknife</div>
+  <div class="sub">2026/09/18（五）～ 2026/09/30（三）抵台｜台北 ⇄ 香港轉機 ⇄ Vancouver・Seattle・Canadian Rockies・Yellowknife</div>
   <div class="pills">
     <span class="pill" id="countdown"></span>
     <span class="pill">ESTA 已核准（至 2028-09-13）</span>
@@ -1903,7 +1932,8 @@ if (window.L) {
 }
 
 // ===== 黃刀鎮餐廳／採買清單（來源：KK 部落格〈黃刀鎮景點推薦〉2026-06 版；座標取自文章附的 Google 地圖地標，Walmart / KFC / Starbucks 取自 OpenStreetMap）=====
-const YK_SOURCE = 'https://halokkvision.com/yellowknife-tour-food/';
+const PRINT = new URLSearchParams(location.search).has('print');
+const YK_SOURCE ='https://halokkvision.com/yellowknife-tour-food/';
 const YK_DAYS = { // 每天可以用到的時段
   '9/24': '晚餐（約 19:00 抵達飯店後；極光出發前）',
   '9/25': '早午餐、午餐、晚餐、宵夜與採買',
@@ -2006,7 +2036,15 @@ function certHtml(d) {
 }
 
 function pickListHtml(d) {
-  const sel = getPicks(d.date);
+  if (PRINT) return `${certHtml(d)}
+    <div class="pnote">🍴 餐廳＆採買清單：見 9/26 後面的「黃刀鎮餐廳＆採買清單」章節。</div>`;
+  return `${certHtml(d)}
+    <h3>🍴 黃刀餐廳＆採買清單（可勾選）</h3>
+    <div class="picksum"></div>
+    <div class="pickintro">本日適用：${esc(YK_DAYS[d.date])}。勾選想去的店，會在地圖上放大標示，並記在這台裝置的瀏覽器裡（每天分開記）。</div>
+    ${pickGroupsHtml(getPicks(d.date))}`;
+}
+function pickGroupsHtml(sel) {
   const groups = Object.entries(PICK_CAT).map(([cat, c]) => {
     const items = YK_PICKS.filter(p => p.cat === cat).map(p => {
       const dist = km(P.NOVA, p.ll), sf = SEAFOOD[p.seafood];
@@ -2023,17 +2061,13 @@ function pickListHtml(d) {
     }).join('');
     return `<div class="pgroup"><div class="pgtitle">${c.label}</div>${items}</div>`;
   }).join('');
-  return `${certHtml(d)}
-    <h3>🍴 黃刀餐廳＆採買清單（可勾選）</h3>
-    <div class="picksum" id="picksum"></div>
-    <div class="pickintro">本日適用：${esc(YK_DAYS[d.date])}。勾選想去的店，會在地圖上放大標示，並記在這台裝置的瀏覽器裡（每天分開記）。</div>
-    ${groups}
+  return `${groups}
     <div class="nofish">🚫 避開海鮮：魚、蝦、蟹、貝類，含魚露、魚介湯底。英文：<span class="phrase">“I don't eat seafood. No fish or shellfish, please.”</span></div>
     <div class="pickintro">🧾 作者提醒：黃刀用餐通常會詢問是否加服務費；外帶可不加。部分店家會公休，出發前先看 Google 地圖營業時間。市區有一區常有遊民，快速通過，深夜不要在外閒晃。<br>
       清單來源：<a href="${YK_SOURCE}" target="_blank" rel="noopener">KK〈黃刀鎮景點推薦／黃刀鎮美食〉</a>（2026/06 發布，作者為 9 月下旬造訪，價格與營業資訊可能已變動）。</div>`;
 }
-function updatePickSummary(d) {
-  const box = document.getElementById('picksum'); if (!box) return;
+function updatePickSummary(d, root = document) {
+  const box = root.querySelector('.picksum'); if (!box) return;
   const sel = getPicks(d.date), names = YK_PICKS.filter(p => sel.has(p.id)).map(p => p.name);
   box.innerHTML = names.length ? `✅ ${d.date} 已選 ${names.length} 家：${names.map(esc).join('、')}` : `尚未勾選，下方挑選想去的餐廳和採買地點`;
 }
@@ -2043,14 +2077,17 @@ function drawPicks(d) {
   pickLayer.clearLayers();
   Object.keys(pickMarkers).forEach(k => delete pickMarkers[k]);
   if (!d || !YK_DAYS[d.date]) return;
+  paintPicks(pickLayer, d, pickMarkers);
+}
+function paintPicks(lyr, d, store) {
   const sel = getPicks(d.date);
   YK_PICKS.forEach(p => {
     const on = sel.has(p.id), c = PICK_CAT[p.cat].color;
     const m = L.circleMarker(p.ll, {radius: on ? 10 : 6, color: on ? '#111' : '#fff', weight: on ? 3 : 1.5, fillColor: c, fillOpacity: on ? 1 : .8})
-      .addTo(pickLayer)
+      .addTo(lyr)
       .bindTooltip(`${on ? '✅ ' : ''}${p.name}`, {permanent: on, direction:'top', offset:[0,-8]})
       .bindPopup(`<b>${esc(p.name)}</b><br>${esc(p.zh)}<br><a href="${p.gmap}" target="_blank" rel="noopener">在 Google 地圖開啟 ↗</a>`);
-    pickMarkers[p.id] = m;
+    store[p.id] = m;
   });
 }
 
@@ -2059,6 +2096,9 @@ function drawDay(idx) {
   if (!map) return;
   layer.clearLayers(); markers.length = 0;
   drawPicks(idx === -1 ? null : DAYS[idx]);
+  paintDay(map, layer, idx, markers);
+}
+function paintDay(map, layer, idx, markers) {
   if (idx === -1) { // overview
     const bounds = [];
     DAYS.forEach((d, i) => {
@@ -2109,7 +2149,7 @@ function mealPlanHtml(d) {
   return `<div class="mealplan">${rows}</div>
     <div class="nofish">🍽 餐包菜單尚待確認，需向導遊／地接確認 non-seafood option。<br>
       英文備用句：<span class="phrase">“I don't eat seafood. No fish or shellfish, please.”</span></div>
-    <div class="nofish">🚫 避開海鮮：魚、蝦、蟹、貝類，含魚露、魚介湯底</div>`;
+    ${PRINT ? '' : `<div class="nofish">🚫 避開海鮮：魚、蝦、蟹、貝類，含魚露、魚介湯底</div>`}`;
 }
 
 function renderMealPackageCard() {
@@ -2129,8 +2169,7 @@ function renderMealPackageCard() {
 }
 renderMealPackageCard();
 
-function renderDetail(idx) {
-  const el = document.getElementById('detail');
+function renderDetail(idx, el = document.getElementById('detail')) {
   if (idx === -1) {
     el.innerHTML = `<div class="dayhead"><div><h2>全程總覽</h2><div class="city">12 天・4 個區域</div></div></div>
       <h3>每日摘要</h3>
@@ -2168,14 +2207,14 @@ function renderDetail(idx) {
     cb.checked ? set.add(cb.value) : set.delete(cb.value);
     savePicks(d.date, set);
     cb.closest('.pick').classList.toggle('on', cb.checked);
-    updatePickSummary(d); drawPicks(d);
+    updatePickSummary(d, el); drawPicks(d);
   });
   el.querySelectorAll('.pick .locate').forEach(b => b.onclick = () => {
     const p = YK_PICKS.find(x => x.id === b.dataset.id);
     if (map) { map.setView(p.ll, 16); const m = pickMarkers[p.id]; if (m) m.openPopup(); if (innerWidth <= 900) scrollTo({top:0,behavior:'smooth'}); }
     else window.open(p.gmap, '_blank');
   });
-  if (YK_DAYS[d.date]) updatePickSummary(d);
+  if (YK_DAYS[d.date]) updatePickSummary(d, el);
 }
 
 const bar = document.getElementById('daybar');
@@ -2196,7 +2235,73 @@ let init = -1;
 const today = new Date(), md = `${today.getMonth()+1}/${today.getDate()}`;
 const ti = today.getFullYear() === 2026 ? DAYS.findIndex(d => d.date === md) : -1;
 if (ti >= 0) init = ti; else { try { const s = localStorage.getItem('trip-day'); if (s !== null) init = +s; } catch(e) {} }
-select(init);
+
+// ===== 列印／PDF 模式：?print=1 → 全部天數展開、每天附靜態地圖 =====
+function printPicksSection() {
+  const sec = document.createElement('section'); sec.className = 'panel pday';
+  sec.innerHTML = `<div class="dayhead"><div><h2>🍴 黃刀鎮餐廳＆採買清單</h2>
+      <div class="city" style="color:${CITY_COLOR.Yellowknife}">● Yellowknife・9/24 晚餐、9/25 全天、9/26 早午餐與最後採買</div></div></div>
+    <div class="pmap"></div>
+    <div class="pickintro">地圖圓點顏色：藍＝明信片／證書、綠＝超市、橘＝速食咖啡、紅＝餐廳、紫＝紀念品。距離為到 Chateau Nova 的直線距離。</div>
+    ${pickGroupsHtml(new Set())}`;
+  return sec;
+}
+function staticPicksMap(div) {
+  const m = L.map(div, {zoomControl:false, dragging:false, scrollWheelZoom:false, doubleClickZoom:false, boxZoom:false, keyboard:false,
+    fadeAnimation:false, zoomAnimation:false, markerZoomAnimation:false});
+  L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}', {
+    maxZoom:19, attribution:'Tiles &copy; Esri &mdash; Esri, HERE, Garmin, &copy; OpenStreetMap contributors'
+  }).on('loading', () => pendingTiles.add(m)).on('load', () => { pendingTiles.delete(m); checkReady(); }).addTo(m);
+  pendingTiles.add(m);
+  YK_PICKS.forEach(p => L.circleMarker(p.ll, {radius:6, color:'#fff', weight:1.5, fillColor:PICK_CAT[p.cat].color, fillOpacity:1})
+    .addTo(m).bindTooltip(p.name, {permanent:true, direction:'right', offset:[6,0], className:'ptip-label'}));
+  L.marker(P.NOVA, {icon: L.divIcon({className:'', html:`<div class="num-icon" style="background:${CITY_COLOR.Yellowknife}">🏨</div>`, iconSize:[26,26], iconAnchor:[13,13]})}).addTo(m);
+  m.fitBounds(YK_PICKS.map(p => p.ll).concat([P.NOVA]), {padding:[20,20]});
+}
+function staticMap(div, idx) {
+  if (!window.L) { div.remove(); return; }
+  const m = L.map(div, {zoomControl:false, dragging:false, scrollWheelZoom:false, doubleClickZoom:false, boxZoom:false, keyboard:false,
+    fadeAnimation:false, zoomAnimation:false, markerZoomAnimation:false});
+  L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}', {
+    maxZoom:19, attribution:'Tiles &copy; Esri &mdash; Esri, HERE, Garmin, &copy; OpenStreetMap contributors'
+  }).on('loading', () => pendingTiles.add(m)).on('load', () => { pendingTiles.delete(m); checkReady(); }).addTo(m);
+  pendingTiles.add(m);
+  const lyr = L.layerGroup().addTo(m);
+  if (idx !== -1 && YK_DAYS[DAYS[idx].date]) paintPicks(lyr, DAYS[idx], {});
+  paintDay(m, lyr, idx, []);
+}
+const pendingTiles = new Set();
+function checkReady() { if (pendingTiles.size === 0) setTimeout(() => { document.title = 'READY ' + document.title.replace(/^READY /, ''); }, 800); }
+
+function buildPrint() {
+  document.body.classList.add('printmode');
+  const now = new Date(), pad = n => String(n).padStart(2, '0');
+  document.getElementById('countdown').textContent =
+    `📄 PDF 版本：${now.getFullYear()}/${pad(now.getMonth()+1)}/${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())}`;
+  const layout = document.querySelector('main .layout');
+  // 總覽
+  const ov = document.createElement('section'); ov.className = 'panel'; layout.after(ov);
+  renderDetail(-1, ov);
+  const ovMap = document.createElement('div'); ovMap.className = 'pmap ov';
+  ov.querySelector('.dayhead').after(ovMap);
+  // 每一天
+  const sky = document.getElementById('skytrain');
+  const dayMaps = DAYS.map((d, i) => {
+    const art = document.createElement('section'); art.className = 'panel pday'; sky.before(art);
+    renderDetail(i, art);
+    art.querySelectorAll('h3').forEach(h => { if (h.textContent.startsWith('地點')) h.textContent = '地點'; });
+    const mdiv = document.createElement('div'); mdiv.className = 'pmap';
+    art.querySelector('.meta').after(mdiv);
+    if (d.date === '9/26') sky.before(printPicksSection());
+    return [mdiv, i];
+  });
+  staticMap(ovMap, -1);
+  dayMaps.forEach(([div, i]) => staticMap(div, i));
+  if (window.L) { const pm = document.querySelector('.pday:not(:has(.meta)) .pmap'); if (pm) staticPicksMap(pm); }
+  if (!window.L) checkReady();
+}
+
+if (PRINT) buildPrint(); else select(init);
 </script>
 </body>
 </html>
